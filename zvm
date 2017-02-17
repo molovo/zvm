@@ -1,0 +1,401 @@
+#!/usr/bin/env zsh
+
+# Set some global variables
+typeset -g ZVM_DIR=${ZVM_DIR:-"${ZDOTDIR:-$HOME}/.zvm"}
+typeset -g ZVM_SRC_DIR=${ZVM_SRC_DIR:-"${ZVM_DIR}/src"}
+typeset -g ZVM_LOG_DIR=${ZVM_LOG_DIR:-"${ZVM_DIR}/log"}
+typeset -g ZVM_COMPILE_DIR=${ZVM_COMPILE_DIR:-"${ZVM_DIR}/compiled"}
+
+###
+# Output version information
+###
+function _zvm_version() {
+  echo '0.1.0'
+}
+
+###
+# Output usage information
+###
+function _zvm_usage() {
+  echo ZVM $(_zvm_version)
+  echo
+  echo $(color yellow 'Usage:')
+  echo '  zvm [options] <command>'
+  echo
+  echo $(color yellow 'Commands:')
+  echo '  current              Output the current version'
+  echo '  default [<version>]  Output the default version, or set the default'
+  echo '  install <version>    Install the specified ZSH version'
+  echo '  list                 List available versions'
+  echo '  remove <version>     Remove the specified ZSH version'
+  echo '  use [<version>]      Switch to the specified ZSH version, or the default if not specified'
+}
+
+###
+# Install the directories ZVM needs to operate
+###
+function _zvm_self_install() {
+  if [[ -d ${ZVM_DIR} ]]; then
+    echo $(color red bold "${ZVM_DIR} already exists. Is ZVM already installed?")
+    echo "Remove ${ZVM_DIR} to continue"
+    exit 1
+  fi
+
+  revolver start 'Creating ZVM directory structure'
+  mkdir -p ${ZVM_DIR}/{bin,compiled,src,log}
+
+  revolver update 'Cloning ZSH source'
+  local repo='git://git.code.sf.net/p/zsh/code'
+  if ! git clone "$repo" "${ZVM_SRC_DIR}" >/dev/null 2>&1; then
+    echo $(color red bold "Failed to download ZSH source")
+    exit 1
+  fi
+
+  revolver stop
+}
+
+###
+# Check if a ZSH version is installed
+###
+function _zvm_is_installed() {
+  local version="$1"
+
+  _zvm_list --installed --simple | grep -E "^$version$" >/dev/null 2>&1
+}
+
+###
+# Check if a ZSH version is valid
+###
+function _zvm_is_valid() {
+  local version="$1"
+
+  _zvm_list --simple | grep -E "^$version$" >/dev/null 2>&1
+}
+
+###
+# List available ZSH versions
+###
+function _zvm_list() {
+  local installed prerelease search current default version versions out
+
+  zparseopts -D \
+    i=installed -installed=installed \
+    p=prerelease -prerelease=prerelease \
+    s=simple -simple=simple
+
+  # If ZVM hasn't set itself up, do it now
+  if [[ ! -d "${ZVM_DIR}" ]]; then
+    _zvm_self_install
+  fi
+
+  [[ -f "${ZVM_DIR}/.current" ]] && current=$(cat "${ZVM_DIR}/.current")
+  [[ -f "${ZVM_DIR}/.default" ]] && default=$(cat "${ZVM_DIR}/.default")
+
+  # Our basic search command
+  # Matches all tags in the source repository matching 'zsh-x.x.x'
+  search="git tag | grep -E '^zsh-[0-9]+\.[0-9]+(\.[0-9]+)?$'"
+
+  # If --prerelease is specified, we extend the search to match 'zsh-x.x.x-*'
+  if [[ -n $prerelease ]]; then
+    search="git tag | grep -E '^zsh-[0-9]+\.[0-9]+(\.[0-9]+)?(-.*)?'"
+  fi
+
+  # If --installed is specified, we filter the list of results to
+  # the list of directories in ${ZVM_DIR}/compiled
+  if [[ -n $installed ]]; then
+    search="$search | grep -E '^zsh-(${(j.|.)${:-${(@f)$(ls "${ZVM_DIR}/compiled")}}//./\.})$'"
+  fi
+
+  # cd to the source directory, and ensure it's up to date
+  cd ${ZVM_SRC_DIR}
+  git fetch origin
+
+  # Execute the search command and store the results in an array
+  versions=($(eval "$search"))
+
+  # If --simple is specified, just print the list straight to screen
+  if [[ -n $simple ]]; then
+    echo ${(@F)^versions//zsh-/}
+    return
+  fi
+
+  # Loop through each of the versions
+  for version in ${^versions//zsh-/}; do
+    flags=""
+
+    if [[ $version = $current ]]; then
+      flags+=$(color yellow '➾ ')
+    else
+      flags+='  '
+    fi
+
+    if [[ $version = $default ]]; then
+      flags+=$(color magenta '• ')
+    else
+      flags+='  '
+    fi
+
+    # if _zvm_is_installed $version; then
+    if [[ -d "${ZVM_COMPILE_DIR}/${version}" ]]; then
+      flags+=$(color green '✔ ')
+    else
+      flags+='  '
+    fi
+
+    echo "$flags $version"
+  done
+
+  echo
+  echo "$(color yellow '➾ ') current"
+  echo "$(color magenta '• ') default"
+  echo "$(color green '✔ ') installed"
+}
+
+###
+# Set the default version to use
+###
+function _zvm_default() {
+  local version="$1"
+
+  if [[ -z $version ]]; then
+    if [[ -f "${ZVM_DIR}/.default" ]]; then
+      echo $(cat "${ZVM_DIR}/.default")
+    else
+      echo $(color yellow 'No default set. Run `zvm default <version>`')
+    fi
+
+    exit
+  fi
+
+  if ! _zvm_is_installed $version; then
+    _zvm_install $version
+  fi
+
+  echo $version >! "${ZVM_DIR}/.default"
+}
+
+###
+# Output the current version
+###
+function _zvm_current() {
+  if [[ -f "${ZVM_DIR}/.current" ]]; then
+    echo $(cat "${ZVM_DIR}/.current")
+  else
+    echo $(color yellow 'No current set. Run `zvm use`')
+  fi
+
+  exit
+}
+
+###
+# Use a specific ZSH version.
+# If no version is specified, the default is used.
+# If the chosen version is not installed, it is done now.
+###
+function _zvm_use() {
+  local version="$1"
+
+  # If no version is provided, try and find the default
+  if [[ -z $version || $version = "default" ]]; then
+    [[ -f "${ZVM_DIR}/.default" ]] && version=$(cat "${ZVM_DIR}/.default")
+  fi
+
+  # If we still don't have a version, exit with an error
+  if [[ -z $version ]]; then
+    echo $(color red bold 'You must specify a version, or set a default first using `zvm default <version>`')
+    exit 1
+  fi
+
+  # If ZVM hasn't set itself up, do it now
+  if [[ ! -d "${ZVM_DIR}" ]]; then
+    _zvm_self_install
+  fi
+
+  # If the requested version is not installed, do it now
+  if [[ ! -d "${ZVM_COMPILE_DIR}/$version" ]]; then
+    _zvm_install $version
+  fi
+
+  # Store the current version
+  echo $version > "${ZVM_DIR}/.current"
+
+  # Remove existing links first
+  [[ -L "${ZVM_DIR}/bin" ]] && rm "${ZVM_DIR}/bin"
+  [[ -L "${ZVM_DIR}/scripts" ]] && rm "${ZVM_DIR}/scripts"
+  [[ -L "${ZVM_DIR}/site-functions" ]] && rm "${ZVM_DIR}/site-functions"
+  [[ -L "${ZVM_DIR}/functions" ]] && rm "${ZVM_DIR}/functions"
+  [[ -L "${ZVM_DIR}/lib" ]] && rm "${ZVM_DIR}/lib"
+  [[ -L "${ZVM_DIR}/man" ]] && rm "${ZVM_DIR}/man"
+
+  # Create new symlinks
+  local share="${ZVM_COMPILE_DIR}/${version}/share"
+  ln -s "${ZVM_COMPILE_DIR}/${version}/bin" "${ZVM_DIR}/bin"
+  ln -s "${share}/zsh/${version}/scripts" "${ZVM_DIR}/scripts"
+  ln -s "${share}/zsh/${version}/functions" "${ZVM_DIR}/functions"
+  ln -s "${share}/zsh/site-functions" "${ZVM_DIR}/site-functions"
+  ln -s "${share}/man" "${ZVM_DIR}/man"
+  ln -s "${ZVM_COMPILE_DIR}/${version}/lib" "${ZVM_DIR}/lib"
+}
+
+function _zvm_install() {
+  local version="$1" logfile
+
+  # If ZVM hasn't set itself up, do it now
+  if [[ ! -d "${ZVM_DIR}" ]]; then
+    _zvm_self_install
+  fi
+
+  # Set up the logfile path
+  logfile="${ZVM_LOG_DIR}/$(date '+%Y%m%d-%H%M%S')-${version}-installation.log"
+
+  if [[ ! -d "${ZVM_DIR}" ]]; then
+    _zvm_self_install
+  fi
+
+  # Check if the requested version is already installed
+  if _zvm_is_installed $version; then
+    echo $(color red bold "ZSH version $version already installed. Remove it first")
+    exit 1
+  fi
+
+  if ! _zvm_is_valid $version; then
+    echo $(color red bold "ZSH version $version is not recognised. See \`zvm list\`")
+    exit 1
+  fi
+
+  # Make sure we exit if we hit an error
+  setopt ERR_EXIT
+
+  # Clear the logfile
+  cat /dev/null >! $logfile
+
+  revolver start "Installing ZSH $version"
+  cd ${ZVM_SRC_DIR}
+
+  # Remove any local changes if they exist
+  revolver update 'Removing artefacts from previous build...'
+  if ! git reset --hard >$logfile 2>&1; then
+    echo $(color red bold "Failed to remove artefacts from previous build")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Removed artefacts from previous build"
+
+  # Checkout the correct branch
+  revolver update "Checking out $version..."
+  if ! git checkout zsh-${version} >$logfile 2>&1; then
+    echo $(color red bold "Failed to checkout zsh-$version tag")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Checked out zsh-$version"
+
+  # Create and cd to the compilation directory
+  revolver update "Creating compilation directory..."
+  if ! mkdir -p "${ZVM_COMPILE_DIR}/$version" >$logfile 2>&1; then
+    echo $(color red bold "Failed to create compilation directory")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Created compilation directory at ${ZVM_COMPILE_DIR}/$version"
+
+  # Run configuration scripts
+  revolver update 'Running configuration scripts...'
+  if ! ./Util/preconfig >$logfile 2>&1; then
+    echo $(color red bold "Failed at preconfigure step")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Preconfigure scripts completed successfully"
+
+  if ! ./configure --prefix="${ZVM_COMPILE_DIR}/$version" >$logfile 2>&1; then
+    echo $(color red bold "Failed at configure step")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Configure scripts completed successfully"
+
+  # Run compile script
+  revolver update "Compiling..."
+  if ! make >$logfile 2>&1; then
+    echo $(color red bold "Failed at compilation step")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Build complete"
+
+  # Check build
+  revolver update "Checking build..."
+  if ! make check >$logfile 2>&1; then
+    echo $(color red bold "Post build checks failed")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Post-build checks passed"
+
+  # Install
+  revolver update "Installing..."
+  if ! make install >$logfile 2>&1; then
+    echo $(color red bold "Installation failed")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Successfully installed ZSH $version"
+
+  revolver stop
+}
+
+###
+# The main zvm function
+###
+function _zvm() {
+  local help version ctx="$1"
+
+  zparseopts -D \
+    h=help -help=help \
+    v=version -version=version
+
+  # If --help is specified, output usage information and exit
+  if [[ -n $help ]]; then
+    _zvm_usage
+    exit
+  fi
+
+  # If --version is specified, output version information and exit
+  if [[ -n $version ]]; then
+    _zvm_version
+    exit
+  fi
+
+  case $ctx in
+    use )
+      shift
+      _zvm_use "$@"
+      ;;
+    default )
+      shift
+      _zvm_default "$@"
+      ;;
+    current )
+      shift
+      _zvm_current "$@"
+      ;;
+    install )
+      shift
+      _zvm_install "$@"
+      ;;
+    list )
+      shift
+      _zvm_list "$@"
+      ;;
+    remove )
+      shift
+      _zvm_remove "$@"
+      ;;
+    * )
+      echo "\033[0;31mUnrecognised command $ctx\033[0;m"
+      exit 1
+  esac
+}
+
+_zvm "$@"
