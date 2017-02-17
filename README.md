@@ -1,5 +1,7 @@
 # zvm
 
+[![Join the chat at https://gitter.im/molovo/zvm](https://badges.gitter.im/molovo/zvm.svg)](https://gitter.im/molovo/zvm?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+
 The ZSH version manager
 
 ## Installation
