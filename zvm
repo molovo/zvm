@@ -453,18 +453,18 @@ function _zvm_install() {
   fi
   echo "$(color green '✔') Installed functions"
 
-  if ! builtin type yodl >/dev/null 2>&1; then
-    echo "$(color yellow '‼') yodl not installed. Skipping installation of man pages"
-  else
-    # Install
-    revolver update "Installing man pages..."
-    if ! make install.man >$logfile 2>&1; then
-      echo $(color red bold "Installation of man pages failed")
-      echo "See $logfile for details"
-      exit 1
-    fi
-    echo "$(color green '✔') Installed man pages"
-  fi
+  # if ! builtin type yodl >/dev/null 2>&1; then
+  #   echo "$(color yellow '‼') yodl not installed. Skipping installation of man pages"
+  # else
+  #   # Install
+  #   revolver update "Installing man pages..."
+  #   if ! make install.man >$logfile 2>&1; then
+  #     echo $(color red bold "Installation of man pages failed")
+  #     echo "See $logfile for details"
+  #     exit 1
+  #   fi
+  #   echo "$(color green '✔') Installed man pages"
+  # fi
 
   revolver stop
   echo "$(color green '✔') Successfully installed ZSH $version"
