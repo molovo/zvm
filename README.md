@@ -75,6 +75,14 @@ zvm default 4.3.12
 zvm install 5.0.2
 ```
 
+### Using different versions on a per-project basis
+
+You can set the ZSH version for a specific project by running `zvm dir <version>` within the project's directory, which will create a `.zvmrc` file in the current directory. If you run `zvm use` without specifying a version in a directory with a `.zvmrc` file, it will automatically choose the version specified in `.zvmrc`.
+
+#### Using per-project versions automatically.
+
+Setting `ZVM_AUTO_USE=1` adds a hook which automatically changes the version when you `cd` into a directory with a `.zvmrc` file.
+
 ## License
 
 Copyright (c) 2016 James Dinsdale <hi@molovo.co> (molovo.co)
