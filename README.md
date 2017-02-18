@@ -83,6 +83,10 @@ You can set the ZSH version for a specific project by running `zvm dir <version>
 
 Setting `ZVM_AUTO_USE=1` adds a hook which automatically changes the version when you `cd` into a directory with a `.zvmrc` file.
 
+### Installing man pages
+
+ZSH use [yodl](https://fbb-git.github.io/yodl/) to compile it's man pages. If yodl is not installed on your system, zvm will skip the installation of man pages, to avoid the build erroring. If you require the man pages to be compiled for each version, just make sure `yodl` is available and in your `$PATH`.
+
 ## License
 
 Copyright (c) 2016 James Dinsdale <hi@molovo.co> (molovo.co)
