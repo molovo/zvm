@@ -181,6 +181,8 @@ function _zvm_default() {
   fi
 
   echo $version >! "${ZVM_DIR}/.default"
+
+  echo "$(color green '✔') Default set to ZSH version $version"
 }
 
 ###
@@ -226,6 +228,7 @@ function _zvm_dir() {
   fi
 
   echo $version >! "${PWD}/.zvmrc"
+  echo "$(color green '✔') ZSH version $version set for directory $PWD"
 }
 
 ###
@@ -250,6 +253,11 @@ function _zvm_use() {
   if [[ -z $version ]]; then
     echo $(color red bold 'You must specify a version, or set a default first using `zvm default <version>`')
     exit 1
+  fi
+
+  if [[ $version = $(_zvm_current --quiet) ]]; then
+    echo "$(color green '✔') ZSH version $version is already the current version"
+    return
   fi
 
   # If ZVM hasn't set itself up, do it now
@@ -281,6 +289,8 @@ function _zvm_use() {
   ln -s "${share}/zsh/site-functions" "${ZVM_DIR}/site-functions"
   ln -s "${share}/man" "${ZVM_DIR}/man"
   ln -s "${ZVM_COMPILE_DIR}/${version}/lib" "${ZVM_DIR}/lib"
+
+  echo "$(color green '✔') Switched to ZSH version $version"
 }
 
 function _zvm_install() {
