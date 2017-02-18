@@ -390,15 +390,47 @@ function _zvm_install() {
   echo "$(color green '✔') Post-build checks passed"
 
   # Install
-  revolver update "Installing..."
-  if ! make install >$logfile 2>&1; then
-    echo $(color red bold "Installation failed")
+  revolver update "Installing binaries..."
+  if ! make install.bin >$logfile 2>&1; then
+    echo $(color red bold "Installation of binaries failed")
     echo "See $logfile for details"
     exit 1
   fi
-  echo "$(color green '✔') Successfully installed ZSH $version"
+  echo "$(color green '✔') Installed binaries"
+
+  # Install
+  revolver update "Installing modules..."
+  if ! make install.modules >$logfile 2>&1; then
+    echo $(color red bold "Installation of modules failed")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Installed modules"
+
+  # Install
+  revolver update "Installing functions..."
+  if ! make install.fns >$logfile 2>&1; then
+    echo $(color red bold "Installation of functions failed")
+    echo "See $logfile for details"
+    exit 1
+  fi
+  echo "$(color green '✔') Installed functions"
+
+  if ! builtin type yodl >/dev/null 2>&1; then
+    echo "$(color yellow '‼') yodl not installed. Skipping installation of man pages"
+  else
+    # Install
+    revolver update "Installing man pages..."
+    if ! make install.man >$logfile 2>&1; then
+      echo $(color red bold "Installation of man pages failed")
+      echo "See $logfile for details"
+      exit 1
+    fi
+    echo "$(color green '✔') Installed man pages"
+  fi
 
   revolver stop
+  echo "$(color green '✔') Successfully installed ZSH $version"
 }
 
 ###
