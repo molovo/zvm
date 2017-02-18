@@ -1,0 +1,80 @@
+#compdef zvm
+
+_zvm_commands=(
+  'current:Output the current version'
+  'dir:Output the version for the current directory, or set it to the specified version'
+  'default:Output the default version, or set the default to the specified version'
+  'install:Install the specified ZSH version'
+  'list:List available versions'
+  'remove:Remove the specified ZSH version'
+  'use:Switch to the specified ZSH version, or the version defined in .zvmrc, or the default'
+)
+
+_zvm() {
+  typeset -A opt_args
+  local context state line curcontext="$curcontext"
+
+  _arguments -A \
+    '(-h --help)'{-h,--help}'[show help text and exit]' \
+    '(-v --version)'{-v,--version}'[show version information and exit]'
+
+  _arguments \
+    '1: :_zvm_cmds' \
+    '*::arg:->args'
+
+  case "$state" in
+    args )
+      case "$words[1]" in
+        list )
+          _arguments -A \
+            '(-h --help)'{-h,--help}'[show help text and exit]' \
+            '(-i --installed)'{-i,--installed}'[only list installed versions]' \
+            '(-p --prerelease)'{-p,--prerelease}'[include pre-release versions in results]'
+          ;;
+        current )
+          _arguments -A \
+            '(-h --help)'{-h,--help}'[show help text and exit]' \
+            '(-q --quiet)'{-q,--quiet}'[suppress output]'
+          ;;
+        default )
+          _arguments -A \
+            '(-h --help)'{-h,--help}'[show help text and exit]' \
+            '(-q --quiet)'{-q,--quiet}'[suppress output]'
+
+          _arguments \
+            '*:version:_zvm_all_versions'
+          ;;
+        use|install )
+          _arguments -A \
+            '(-h --help)'{-h,--help}'[show help text and exit]'
+
+          _arguments \
+            '*:version:_zvm_all_versions'
+          ;;
+        remove )
+          _arguments -A \
+            '(-h --help)'{-h,--help}'[show help text and exit]'
+
+          _arguments \
+            '*:version:_zvm_installed_versions'
+          ;;
+      esac
+      ;;
+  esac
+}
+
+(( $+functions[_zvm_cmds] )) || _zvm_cmds() {
+  _describe -t commands 'commands' _zvm_commands "$@"
+}
+
+(( $+functions[_zvm_all_versions] )) || _zvm_all_versions() {
+  versions=($(zvm list --simple))
+  _describe -t versions 'versions' versions "$@"
+}
+
+(( $+functions[_zvm_installed_versions] )) || _zvm_installed_versions() {
+  versions=($(zvm list --installed --simple))
+  _describe -t versions 'versions' versions "$@"
+}
+
+_zvm "$@"
