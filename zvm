@@ -203,6 +203,29 @@ function _zvm_current() {
 }
 
 ###
+# Remove an installed ZSH version
+function _zvm_remove() {
+  local version="$1"
+
+  if ! _zvm_is_installed $version; then
+    echo $(color red bold "ZSH version $version is not installed")
+    exit 1
+  fi
+
+  if [[ "$(_zvm_current --quiet)" = "$version" ]]; then
+    _zvm_unuse $version
+  fi
+
+  if [[ "$(_zvm_default --quiet)" = "$version" ]]; then
+    rm "${ZVM_DIR}/.default"
+  fi
+
+  [[ -d "${ZVM_COMPILE_DIR}/${version}" ]] && rm -rf "${ZVM_COMPILE_DIR}/${version}"
+
+  echo "$(color green '✔') ZSH version $version removed"
+}
+
+###
 # Set the version to use within the current directory
 # If no version is passed, return the current version for this directory
 ###
@@ -229,6 +252,22 @@ function _zvm_dir() {
 
   echo $version >! "${PWD}/.zvmrc"
   echo "$(color green '✔') ZSH version $version set for directory $PWD"
+}
+
+###
+# Unset the currently selected version
+###
+function _zvm_unuse() {
+  # Remove links to the current version
+  [[ -L "${ZVM_DIR}/bin" ]] && rm "${ZVM_DIR}/bin"
+  [[ -L "${ZVM_DIR}/scripts" ]] && rm "${ZVM_DIR}/scripts"
+  [[ -L "${ZVM_DIR}/site-functions" ]] && rm "${ZVM_DIR}/site-functions"
+  [[ -L "${ZVM_DIR}/functions" ]] && rm "${ZVM_DIR}/functions"
+  [[ -L "${ZVM_DIR}/lib" ]] && rm "${ZVM_DIR}/lib"
+  [[ -L "${ZVM_DIR}/man" ]] && rm "${ZVM_DIR}/man"
+
+  # Remove the current defined version
+  [[ -f "${ZVM_DIR}/.current" ]] && rm "${ZVM_DIR}/.current"
 }
 
 ###
@@ -274,12 +313,7 @@ function _zvm_use() {
   echo $version > "${ZVM_DIR}/.current"
 
   # Remove existing links first
-  [[ -L "${ZVM_DIR}/bin" ]] && rm "${ZVM_DIR}/bin"
-  [[ -L "${ZVM_DIR}/scripts" ]] && rm "${ZVM_DIR}/scripts"
-  [[ -L "${ZVM_DIR}/site-functions" ]] && rm "${ZVM_DIR}/site-functions"
-  [[ -L "${ZVM_DIR}/functions" ]] && rm "${ZVM_DIR}/functions"
-  [[ -L "${ZVM_DIR}/lib" ]] && rm "${ZVM_DIR}/lib"
-  [[ -L "${ZVM_DIR}/man" ]] && rm "${ZVM_DIR}/man"
+  _zvm_unuse $version
 
   # Create new symlinks
   local share="${ZVM_COMPILE_DIR}/${version}/share"
@@ -293,6 +327,9 @@ function _zvm_use() {
   echo "$(color green '✔') Switched to ZSH version $version"
 }
 
+###
+# Install a ZSH version
+###
 function _zvm_install() {
   local version="$1" logfile
 
@@ -483,6 +520,10 @@ function _zvm() {
     dir )
       shift
       _zvm_dir "$@"
+      ;;
+    remove )
+      shift
+      _zvm_remove "$@"
       ;;
     * )
       echo "\033[0;31mUnrecognised command $ctx\033[0;m"
