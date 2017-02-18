@@ -153,18 +153,23 @@ function _zvm_list() {
 
 ###
 # Set the default version to use
+# If no version is passed, return the current default
 ###
 function _zvm_default() {
-  local version="$1"
+  local version quiet
+
+  zparseopts -D q=quiet -quiet=quiet
+
+  version="$1"
 
   if [[ -z $version ]]; then
     if [[ -f "${ZVM_DIR}/.default" ]]; then
       echo $(cat "${ZVM_DIR}/.default")
-    else
-      echo $(color yellow 'No default set. Run `zvm default <version>`')
+      return
     fi
 
-    exit
+    [[ -z $quiet ]] && echo $(color yellow 'No default set. Run `zvm default <version>`')
+    return 1
   fi
 
   if ! _zvm_is_installed $version; then
@@ -178,13 +183,17 @@ function _zvm_default() {
 # Output the current version
 ###
 function _zvm_current() {
+  local quiet
+
+  zparseopts -D q=quiet -quiet=quiet
+
   if [[ -f "${ZVM_DIR}/.current" ]]; then
     echo $(cat "${ZVM_DIR}/.current")
-  else
-    echo $(color yellow 'No current set. Run `zvm use`')
+    return
   fi
 
-  exit
+  [[ -z $quiet ]] && echo $(color yellow 'No version set. Run `zvm use`')
+  return 1
 }
 
 ###
@@ -195,9 +204,14 @@ function _zvm_current() {
 function _zvm_use() {
   local version="$1"
 
+  # If no version is provided, check for a .zvmrc
+  if [[ -z $version ]]; then
+    version=$(_zvm_dir --quiet)
+  fi
+
   # If no version is provided, try and find the default
   if [[ -z $version || $version = "default" ]]; then
-    [[ -f "${ZVM_DIR}/.default" ]] && version=$(cat "${ZVM_DIR}/.default")
+    version=$(_zvm_default --quiet)
   fi
 
   # If we still don't have a version, exit with an error
