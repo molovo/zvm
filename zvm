@@ -24,11 +24,15 @@ function _zvm_usage() {
   echo
   echo $(color yellow 'Commands:')
   echo '  current              Output the current version'
+  echo '  dir [<version>]      Output the version for the current directory, or'
+  echo '                       set it to the specified version'
   echo '  default [<version>]  Output the default version, or set the default'
+  echo '                       to the specified version'
   echo '  install <version>    Install the specified ZSH version'
   echo '  list                 List available versions'
   echo '  remove <version>     Remove the specified ZSH version'
-  echo '  use [<version>]      Switch to the specified ZSH version, or the default if not specified'
+  echo '  use [<version>]      Switch to the specified ZSH version, or the'
+  echo '                       version defined in .zvmrc, or the default'
 }
 
 ###
@@ -194,6 +198,34 @@ function _zvm_current() {
 
   [[ -z $quiet ]] && echo $(color yellow 'No version set. Run `zvm use`')
   return 1
+}
+
+###
+# Set the version to use within the current directory
+# If no version is passed, return the current version for this directory
+###
+function _zvm_dir() {
+  local version quiet
+
+  zparseopts -D q=quiet -quiet=quiet
+
+  version="$1"
+
+  if [[ -z $version ]]; then
+    if [[ -f "${PWD}/.zvmrc" ]]; then
+      echo $(cat "${PWD}/.zvmrc")
+      return
+    fi
+
+    [[ -z $quiet ]] && echo $(color yellow "No version set for $PWD. Run \`zvm use <version>\`")
+    return 1
+  fi
+
+  if ! _zvm_is_installed $version; then
+    _zvm_install $version
+  fi
+
+  echo $version >! "${PWD}/.zvmrc"
 }
 
 ###
@@ -405,6 +437,10 @@ function _zvm() {
     remove )
       shift
       _zvm_remove "$@"
+      ;;
+    dir )
+      shift
+      _zvm_dir "$@"
       ;;
     * )
       echo "\033[0;31mUnrecognised command $ctx\033[0;m"
