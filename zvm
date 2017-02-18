@@ -367,7 +367,7 @@ function _zvm_install() {
 
   # Remove any local changes if they exist
   revolver update 'Removing artefacts from previous build...'
-  if ! git reset --hard >$logfile 2>&1; then
+  if ! git reset --hard >>$logfile 2>&1; then
     echo $(color red bold "Failed to remove artefacts from previous build")
     echo "See $logfile for details"
     exit 1
@@ -376,7 +376,7 @@ function _zvm_install() {
 
   # Checkout the correct branch
   revolver update "Checking out $version..."
-  if ! git checkout zsh-${version} >$logfile 2>&1; then
+  if ! git checkout zsh-${version} >>$logfile 2>&1; then
     echo $(color red bold "Failed to checkout zsh-$version tag")
     echo "See $logfile for details"
     exit 1
@@ -385,7 +385,7 @@ function _zvm_install() {
 
   # Create and cd to the compilation directory
   revolver update "Creating compilation directory..."
-  if ! mkdir -p "${ZVM_COMPILE_DIR}/$version" >$logfile 2>&1; then
+  if ! mkdir -p "${ZVM_COMPILE_DIR}/$version" >>$logfile 2>&1; then
     echo $(color red bold "Failed to create compilation directory")
     echo "See $logfile for details"
     exit 1
@@ -394,14 +394,14 @@ function _zvm_install() {
 
   # Run configuration scripts
   revolver update 'Running configuration scripts...'
-  if ! ./Util/preconfig >$logfile 2>&1; then
+  if ! ./Util/preconfig >>$logfile 2>&1; then
     echo $(color red bold "Failed at preconfigure step")
     echo "See $logfile for details"
     exit 1
   fi
   echo "$(color green '✔') Preconfigure scripts completed successfully"
 
-  if ! ./configure --prefix="${ZVM_COMPILE_DIR}/$version" >$logfile 2>&1; then
+  if ! ./configure --prefix="${ZVM_COMPILE_DIR}/$version" >>$logfile 2>&1; then
     echo $(color red bold "Failed at configure step")
     echo "See $logfile for details"
     exit 1
@@ -410,7 +410,7 @@ function _zvm_install() {
 
   # Run compile script
   revolver update "Compiling..."
-  if ! make >$logfile 2>&1; then
+  if ! make >>$logfile 2>&1; then
     echo $(color red bold "Failed at compilation step")
     echo "See $logfile for details"
     exit 1
@@ -419,7 +419,7 @@ function _zvm_install() {
 
   # Check build
   revolver update "Checking build..."
-  if ! make check >$logfile 2>&1; then
+  if ! make check >>$logfile 2>&1; then
     echo $(color red bold "Post build checks failed")
     echo "See $logfile for details"
     exit 1
@@ -428,7 +428,7 @@ function _zvm_install() {
 
   # Install
   revolver update "Installing binaries..."
-  if ! make install.bin >$logfile 2>&1; then
+  if ! make install.bin >>$logfile 2>&1; then
     echo $(color red bold "Installation of binaries failed")
     echo "See $logfile for details"
     exit 1
@@ -437,7 +437,7 @@ function _zvm_install() {
 
   # Install
   revolver update "Installing modules..."
-  if ! make install.modules >$logfile 2>&1; then
+  if ! make install.modules >>$logfile 2>&1; then
     echo $(color red bold "Installation of modules failed")
     echo "See $logfile for details"
     exit 1
@@ -446,7 +446,7 @@ function _zvm_install() {
 
   # Install
   revolver update "Installing functions..."
-  if ! make install.fns >$logfile 2>&1; then
+  if ! make install.fns >>$logfile 2>&1; then
     echo $(color red bold "Installation of functions failed")
     echo "See $logfile for details"
     exit 1
@@ -458,7 +458,7 @@ function _zvm_install() {
   # else
   #   # Install
   #   revolver update "Installing man pages..."
-  #   if ! make install.man >$logfile 2>&1; then
+  #   if ! make install.man >>$logfile 2>&1; then
   #     echo $(color red bold "Installation of man pages failed")
   #     echo "See $logfile for details"
   #     exit 1
