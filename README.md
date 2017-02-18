@@ -13,6 +13,7 @@ The ZSH version manager
 * ZSH `4.3.12` or above
 * git `1.9.1` or above
 * GCC and Make (Installed by default on OSX. For Ubuntu, run `sudo apt-get install build-essential`)
+* To compile versions of ZSH < 5.0 on linux, you will also need the `autoconf`, `ncurses-dev` and `yodl` packages.
 
 ### Installing with [zulu](https://zulu.sh)
 
@@ -82,10 +83,6 @@ You can set the ZSH version for a specific project by running `zvm dir <version>
 #### Using per-project versions automatically.
 
 Setting `ZVM_AUTO_USE=1` adds a hook which automatically changes the version when you `cd` into a directory with a `.zvmrc` file.
-
-### Installing man pages
-
-ZSH use [yodl](https://fbb-git.github.io/yodl/) to compile it's man pages. If yodl is not installed on your system, zvm will skip the installation of man pages, to avoid the build erroring. If you require the man pages to be compiled for each version, just make sure `yodl` is available and in your `$PATH`.
 
 ## License
 
