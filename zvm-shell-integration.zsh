@@ -18,3 +18,11 @@ manpath=(
   ${ZVM_DIR}/man
   $manpath
 )
+
+autoload -U add-zsh-hook
+load-zvmrc() {
+  if [[ -n ${ZVM_AUTO_USE} && -f .zvmrc && -r .zvmrc ]]; then
+    zvm use
+  fi
+}
+add-zsh-hook chpwd load-zvmrc
