@@ -309,11 +309,11 @@ function _zvm_use() {
     _zvm_install $version
   fi
 
-  # Store the current version
-  echo $version > "${ZVM_DIR}/.current"
-
   # Remove existing links first
   _zvm_unuse $version
+
+  # Store the current version
+  echo $version > "${ZVM_DIR}/.current"
 
   # Create new symlinks
   local share="${ZVM_COMPILE_DIR}/${version}/share"
