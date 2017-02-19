@@ -46,7 +46,7 @@ function _zvm_self_install() {
   fi
 
   revolver start 'Creating ZVM directory structure'
-  mkdir -p ${ZVM_DIR}/{bin,compiled,src,log}
+  mkdir -p ${ZVM_DIR}/{compiled,src,log}
 
   revolver update 'Cloning ZSH source'
   local repo='git://git.code.sf.net/p/zsh/code'
