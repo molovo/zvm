@@ -237,10 +237,15 @@ function _zvm_dir() {
   version="$1"
 
   if [[ -z $version ]]; then
-    if [[ -f "${PWD}/.zvmrc" ]]; then
-      echo $(cat "${PWD}/.zvmrc")
-      return
-    fi
+    local filename=".zvmrc"
+    while [[ $(realpath $filename) != '/.zvmrc' ]]; do
+      if [[ -f $filename && -r $filename ]]; then
+        echo $(cat $filename)
+        return
+      fi
+
+      filename="../$filename"
+    done
 
     [[ -z $quiet ]] && echo $(color yellow "No version set for $PWD. Run \`zvm use <version>\`")
     return 1
