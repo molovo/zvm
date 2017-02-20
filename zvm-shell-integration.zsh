@@ -19,10 +19,27 @@ manpath=(
   $manpath
 )
 
+typeset -g ZVM_GLOBAL_VERSION
+
 autoload -U add-zsh-hook
 load-zvmrc() {
-  if [[ -n ${ZVM_AUTO_USE} && -f .zvmrc && -r .zvmrc ]]; then
-    zvm use
+  if [[ -z $ZVM_AUTO_USE ]]; then
+    return
+  fi
+
+  version=$(zvm dir --quiet 2>&1)
+  if [[ -n $version ]]; then
+    if [[ $version != $(zvm current) ]]; then
+      ZVM_GLOBAL_VERSION=$(zvm current)
+      zvm use $version
+    fi
+
+    return
+  fi
+
+  if [[ -n $ZVM_GLOBAL_VERSION ]]; then
+    zvm use ${ZVM_GLOBAL_VERSION}
+    ZVM_GLOBAL_VERSION=''
   fi
 }
 add-zsh-hook chpwd load-zvmrc
