@@ -115,7 +115,7 @@ function _zvm_list() {
   git fetch origin
 
   # Execute the search command and store the results in an array
-  versions=($(eval "$search"))
+  versions=($(eval "$search") 'system')
 
   # If --simple is specified, just print the list straight to screen
   if [[ -n $simple ]]; then
@@ -301,6 +301,13 @@ function _zvm_use() {
 
   if [[ $version = $(_zvm_current --quiet) ]]; then
     echo "$(color green '✔') ZSH version $version is already the current version"
+    return
+  fi
+
+  if [[ $version = 'system' ]]; then
+    _zvm_unuse
+    echo $version > "${ZVM_DIR}/.current"
+    echo "$(color green '✔') Reverted to system ZSH version"
     return
   fi
 
