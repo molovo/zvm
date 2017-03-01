@@ -134,7 +134,7 @@ function _zvm_list() {
     fi
 
     if [[ $version = $default ]]; then
-      flags+=$(color magenta '• ')
+      flags+=$(color magenta '● ')
     else
       flags+='  '
     fi
@@ -151,7 +151,7 @@ function _zvm_list() {
 
   echo
   echo "$(color yellow '➾ ') current"
-  echo "$(color magenta '• ') default"
+  echo "$(color magenta '● ') default"
   echo "$(color green '✔ ') installed"
 }
 
