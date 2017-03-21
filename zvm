@@ -10,7 +10,7 @@ typeset -g ZVM_COMPILE_DIR=${ZVM_COMPILE_DIR:-"${ZVM_DIR}/compiled"}
 # Output version information
 ###
 function _zvm_version() {
-  echo '0.2.2'
+  echo '0.2.3'
 }
 
 ###
