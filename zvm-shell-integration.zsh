@@ -23,7 +23,7 @@ typeset -g ZVM_GLOBAL_VERSION
 
 autoload -U add-zsh-hook
 load-zvmrc() {
-  if [[ -z $ZVM_AUTO_USE ]]; then
+  if [[ $ZVM_AUTO_USE -ne 1 ]]; then
     return
   fi
 
