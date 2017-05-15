@@ -12,8 +12,7 @@ The ZSH version manager
 
 * ZSH `4.3.12` or above
 * git `1.9.1` or above
-* GCC and Make (Installed by default on OSX. For Ubuntu, run `sudo apt-get install build-essential`)
-* To compile versions of ZSH < 5.0 on linux, you will also need the `autoconf`, `ncurses-dev` and `yodl` packages.
+* GCC and Make (Installed by default on OSX. For Ubuntu, run `sudo apt-get install build-essential autoconf ncurses-dev yodl`)
 
 ### Installing with [zulu](https://zulu.sh)
 
