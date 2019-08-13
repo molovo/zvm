@@ -369,7 +369,7 @@ function _zvm_install() {
   fi
 
   # Make sure we exit if we hit an error
-  setopt ERR_EXIT
+  setopt localoptions ERR_EXIT
 
   # Clear the logfile
   cat /dev/null >! $logfile
